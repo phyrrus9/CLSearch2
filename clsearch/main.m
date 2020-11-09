@@ -37,8 +37,9 @@ int main(int argc, char * const * argv)
 	NSMutableArray *customKeywords = nil, *customBadwords = nil;
 	NSMutableArray *endpoints = nil;
 	BOOL customEndpoints = NO, hasBadWords = NO;
+	BOOL matchBody = NO, titleOnly = NO;
 	int opt;
-	while((opt = getopt(argc, argv, "hk:b:s:o:K:B:e:E:")) != -1)
+	while((opt = getopt(argc, argv, "htTk:b:s:o:K:B:e:E:")) != -1)
 	{
 		switch(opt)
 		{
@@ -85,16 +86,27 @@ int main(int argc, char * const * argv)
 					options = [[NSMutableArray alloc] init];
 				[options addObject:[NSString stringWithUTF8String:optarg]];
 				break;
+			case 't':
+				fprintf(stderr, "Bad words are only being matched in titles\n");
+				titleOnly = YES;
+				break;
+			case 'T':
+				fprintf(stderr, "Keywords will be matched in body\n");
+				matchBody = YES;
+				break;
 			case 'h':
 				fprintf(stderr,
-					   "-k <keywords.txt>\n"
-					   "-K keyword\n"
-					   "-b <bannedwords.txt>\n"
-					   "-B badword\n"
-					   "-e <endpoints.txt>\n"
-					   "-E endpoint\n"
-					   "-s <section>\n"
-					   "-o option=value\n"
+					   "-k <keywords.txt>    (supply a keyword file)\n"
+					   "-K keyword           (specify a keyword)\n"
+					   "-b <bannedwords.txt> (supply a bad word file)\n"
+					   "-B badword           (specify a bad word)\n"
+					   "-e <endpoints.txt>   (supply a file containing search locations)\n"
+					   "-E endpoint          (specify a search location)\n"
+					   "-s <section>         (override search category)\n"
+					   "-o option=value      (specify a search parameter)\n"
+					   "-t                   (bad words only in title)\n"
+					   "-T                   (keywords matched in body)\n"
+					   "-h                   (display this message)\n"
 					   "\n");
 				return 0;
 				break;
@@ -156,11 +168,11 @@ int main(int argc, char * const * argv)
 			if ([keywords count] > 0)
 			{
 				NSString *lcTitle = [info.Title lowercaseString];
+				NSString *text = !hasBadWords || matchBody ? [client GetPost:info] : nil;
 				for (NSString *keyword in keywords)
-					if ([lcTitle containsString:keyword] && !IdExistsInArray(firstPassResults, [info Id]))
+					if (([lcTitle containsString:keyword] || (matchBody && [text containsString:keyword])) &&
+					    !IdExistsInArray(firstPassResults, [info Id]))
 					{
-						if (!hasBadWords)
-							[client GetPost:info];
 						[firstPassResults addObject:info];
 						break;
 					}
@@ -189,7 +201,8 @@ int main(int argc, char * const * argv)
 			fprintf(stderr, "Pass 2: %d/%lu (%s)", processed+1, [firstPassResults count], [info.Id UTF8String]);
 			fflush(stderr);
 			for (NSString *bannedWord in bannedwords)
-				if ([[info.Title lowercaseString] containsString:bannedWord] || [[client GetPost:info] containsString:bannedWord])
+				if ([[info.Title lowercaseString] containsString:bannedWord] ||
+				    (!titleOnly && [[client GetPost:info] containsString:bannedWord]))
 					goto bannedp2;
 			[secondPassResults addObject:info];
 		bannedp2:;
