@@ -11,7 +11,7 @@
 
 @interface SearchClient : NSObject
 
-- (id)initWithSection:(NSString *)section options:(NSArray *)options;
+- (id)initWithSection:(NSString *)section options:(NSArray *)options query:(NSString *)query maxPages:(NSInteger) max;
 - (NSDictionary *)ListPosts: (NSString *)endpoint;
 - (NSString *)GetPost:(PostInfo *)post;
 

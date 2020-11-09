@@ -14,6 +14,7 @@
 @property NSDateFormatter *dateFormatter;
 @property NSString *Section;
 @property NSString *Parameters;
+@property NSInteger MaxPages;
 
 @end
 
@@ -25,46 +26,48 @@ static NSString *PostBegin = @"<section id=\"postingbody\">";
 static NSString *PostEnd = @"</section>";
 static NSString *PostDate = @"datetime=\"([^\"]*)\"";
 
-- (id)initWithSection:(NSString *)section options:(NSArray *)options
+- (id)initWithSection:(NSString *)section options:(NSArray *)options query:(NSString *)query maxPages:(NSInteger) max
 {
 	self.dateFormatter = [[NSDateFormatter alloc] init];
 	[self.dateFormatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
 	[self.dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZZ"];
 	[self.dateFormatter setCalendar:[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian]];
 	self.Section = section;
-	self.Parameters = @"is_paid=all&postedToday=1";
+	self.Parameters = @"is_paid=all";
 	if (options != nil && [options count] > 0)
 		for (NSString *opt in options)
 			self.Parameters = [self.Parameters stringByAppendingFormat:@"&%@", opt];
+	if (query != nil)
+		self.Parameters = [self.Parameters stringByAppendingFormat:@"&query=%@", query];
+	self.MaxPages = max;
 	return self;
 }
 
 - (NSDictionary *)ListPosts: (NSString *)endpoint
 {
 	NSError *error = nil;
-	
-	NSURL *url = [NSURL URLWithString: [NSString stringWithFormat:@"https://%@.%@/search/%@?%@", endpoint, BaseURL, self.Section, self.Parameters]];
-	NSData *data = [NSData dataWithContentsOfURL:url options:NSDataReadingUncached error:&error];
-	if (error != nil)
-	{
-		// TODO: die here and report error
-	}
-	NSString *ret = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-	error = nil;
 	NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
 	NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern: pattern options:0 error:&error];
-	NSRange   searchedRange = NSMakeRange(0, [ret length]);
-	NSArray* matches = [regex matchesInString:ret options:0 range: searchedRange];
-	for (NSTextCheckingResult* match in matches)
+	for (NSInteger i = 0; i < self.MaxPages; ++i)
 	{
-		NSRange groupUrl = [match rangeAtIndex:1];
-		NSRange groupId = [match rangeAtIndex:2];
-		NSRange groupTitle = [match rangeAtIndex:3];
-		PostInfo *info = [[PostInfo alloc]
-					   initWithId:[ret substringWithRange:groupId]
-					   Title:[ret substringWithRange:groupTitle]
-					   URI:[ret substringWithRange:groupUrl]];
-		[dict setValue:info forKey:[info Id]];
+		NSURL *url = [NSURL URLWithString: [NSString stringWithFormat:@"https://%@.%@/search/%@/?s=%ld&%@",
+									 endpoint, BaseURL, self.Section, 120*i, self.Parameters]];
+		NSData *data = [NSData dataWithContentsOfURL:url options:NSDataReadingUncached error:&error];
+		NSString *ret = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+		error = nil;
+		NSRange   searchedRange = NSMakeRange(0, [ret length]);
+		NSArray* matches = [regex matchesInString:ret options:0 range: searchedRange];
+		for (NSTextCheckingResult* match in matches)
+		{
+			NSRange groupUrl = [match rangeAtIndex:1];
+			NSRange groupId = [match rangeAtIndex:2];
+			NSRange groupTitle = [match rangeAtIndex:3];
+			PostInfo *info = [[PostInfo alloc]
+						   initWithId:[ret substringWithRange:groupId]
+						   Title:[ret substringWithRange:groupTitle]
+						   URI:[ret substringWithRange:groupUrl]];
+			[dict setValue:info forKey:[info Id]];
+		}
 	}
 	return dict;
 }

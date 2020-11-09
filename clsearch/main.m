@@ -36,10 +36,12 @@ int main(int argc, char * const * argv)
 	NSMutableArray *options = nil;
 	NSMutableArray *customKeywords = nil, *customBadwords = nil;
 	NSMutableArray *endpoints = nil;
+	NSString *query = nil;
+	NSInteger maxPages = 1;
 	BOOL customEndpoints = NO, hasBadWords = NO;
-	BOOL matchBody = NO, titleOnly = NO;
+	BOOL matchBody = NO, titleOnly = NO, todayOnly = YES;
 	int opt;
-	while((opt = getopt(argc, argv, "htTk:b:s:o:K:B:e:E:")) != -1)
+	while((opt = getopt(argc, argv, "hatTk:b:s:o:K:B:e:E:q:p:")) != -1)
 	{
 		switch(opt)
 		{
@@ -81,6 +83,10 @@ int main(int argc, char * const * argv)
 				}
 				section = [NSString stringWithUTF8String:optarg];
 				break;
+			case 'p':
+				maxPages = [[NSString stringWithUTF8String:optarg] integerValue];
+				fprintf(stderr, "Searching %lu pages\n", maxPages);
+				break;
 			case 'o':
 				if (options == nil)
 					options = [[NSMutableArray alloc] init];
@@ -94,6 +100,14 @@ int main(int argc, char * const * argv)
 				fprintf(stderr, "Keywords will be matched in body\n");
 				matchBody = YES;
 				break;
+			case 'a':
+				fprintf(stderr, "Searching full page\n");
+				todayOnly = false;
+				break;
+			case 'q':
+				fprintf(stderr, "Using query: %s\n", optarg);
+				query = [NSString stringWithUTF8String:optarg];
+				break;
 			case 'h':
 				fprintf(stderr,
 					   "-k <keywords.txt>    (supply a keyword file)\n"
@@ -102,10 +116,13 @@ int main(int argc, char * const * argv)
 					   "-B badword           (specify a bad word)\n"
 					   "-e <endpoints.txt>   (supply a file containing search locations)\n"
 					   "-E endpoint          (specify a search location)\n"
-					   "-s <section>         (override search category)\n"
+					   "-s <section>         (override search category, default=cpg)\n"
 					   "-o option=value      (specify a search parameter)\n"
+					   "-p n                 (search n pages, default=1)\n"
 					   "-t                   (bad words only in title)\n"
 					   "-T                   (keywords matched in body)\n"
+					   "-a                   (search complete page, not just today)\n"
+					   "-q                   (provide a query)\n"
 					   "-h                   (display this message)\n"
 					   "\n");
 				return 0;
@@ -147,14 +164,20 @@ int main(int argc, char * const * argv)
 	hasBadWords = bannedwords != nil && [bannedwords count] > 0;
 	
 	NSMutableArray *firstPassResults = [[NSMutableArray alloc] init];
-	SearchClient *client = [[SearchClient alloc] initWithSection:section options:options];
-	fprintf(stderr, "Searching section: %s\n", [section UTF8String]);
 	if ([options count] > 0)
 	{
 		fprintf(stderr, "Using options:\n");
 		for (NSString *opt in options)
 			fprintf(stderr, "\t%s\n", [opt UTF8String]);
 	}
+	if (todayOnly)
+	{
+		if (options == nil)
+			options = [[NSMutableArray alloc] init];
+		[options addObject:@"postedToday=1"];
+	}
+	SearchClient *client = [[SearchClient alloc] initWithSection:section options:options query:query maxPages:maxPages];
+	fprintf(stderr, "Searching section: %s\n", [section UTF8String]);
 	int processed_endpoints = 0;
 	for (NSString *endpoint in endpoints)
 	{
