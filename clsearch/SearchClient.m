@@ -70,6 +70,8 @@ static NSString *PostDate = @"datetime=\"([^\"]*)\"";
 }
 - (NSString *)GetPost:(PostInfo *)post
 {
+	if (post.PostText != nil)
+		return [post PostText];
 	NSError *error = nil;
 	NSData *data = [NSData dataWithContentsOfURL:post.URL options:NSDataReadingUncached error:&error];
 	if (error != nil)
@@ -85,8 +87,7 @@ static NSString *PostDate = @"datetime=\"([^\"]*)\"";
 	NSRange searchRange = NSMakeRange(0, postStart.location);
 	NSTextCheckingResult *result = [regex firstMatchInString:ret options:0 range:searchRange];
 	post.PostedAgo = [self GetPostedAgoWithDate:[ret substringWithRange:[result rangeAtIndex:1]]];
-	
-	return [[p1 substringToIndex:postEnd.location] lowercaseString];
+	return (post.PostText = [[p1 substringToIndex:postEnd.location] lowercaseString]);
 }
 - (NSString *)GetPostedAgoWithDate:(NSString *)dateTime
 {

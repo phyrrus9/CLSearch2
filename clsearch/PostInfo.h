@@ -14,6 +14,7 @@
 @property NSString *Title;
 @property NSURL *URL;
 @property NSString *PostedAgo;
+@property NSString *PostText;
 
 - (id)initWithId:(NSString *)identifier Title:(NSString *)title URI:(NSString *)uri;
 
