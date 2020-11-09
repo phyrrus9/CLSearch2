@@ -7,11 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "Endpoints.h"
 #import "SearchClient.h"
-
-NSArray *keywords = nil;
-NSArray *bannedwords = nil;
 
 BOOL IdExistsInArray(NSArray *arr, NSString *key)
 {
@@ -33,8 +29,16 @@ NSArray *ReadWordList(const char *path)
 
 int main(int argc, char * const * argv)
 {
+	NSArray *GetDefaultEndpoints(); // in case user didn't specify
+	NSArray *keywords = nil;
+	NSArray *bannedwords = nil;
+	NSString *section = @"cpg";
+	NSMutableArray *options = nil;
+	NSMutableArray *customKeywords = nil, *customBadwords = nil;
+	NSMutableArray *endpoints = nil;
+	BOOL customEndpoints = NO, hasBadWords = NO;
 	int opt;
-	while((opt = getopt(argc, argv, "k:b:h")) != -1)
+	while((opt = getopt(argc, argv, "hk:b:s:o:K:B:e:E:")) != -1)
 	{
 		switch(opt)
 		{
@@ -44,8 +48,54 @@ int main(int argc, char * const * argv)
 			case 'b':
 				bannedwords = ReadWordList(optarg);
 				break;
+			case 'K':
+				if (customKeywords == nil)
+					customKeywords = [[NSMutableArray alloc] init];
+				[customKeywords addObject:[NSString stringWithUTF8String:optarg]];
+				break;
+			case 'B':
+				if (customBadwords == nil)
+					customBadwords = [[NSMutableArray alloc] init];
+				[customBadwords addObject:[NSString stringWithUTF8String:optarg]];
+				break;
+			case 'e':
+				if (customEndpoints)
+				{
+					fprintf(stderr, "-e and -E must not be specified together\n");
+					return -1;
+				}
+				endpoints = [ReadWordList(optarg) mutableCopy];
+				break;
+			case 'E':
+				customEndpoints = YES;
+				if (endpoints == nil)
+					endpoints = [[NSMutableArray alloc] init];
+				[endpoints addObject:[NSString stringWithUTF8String:optarg]];
+				break;
+			case 's':
+				if (strlen(optarg) != 3)
+				{
+					fprintf(stderr, "unknown section: %s\n", optarg);
+					return -1;
+				}
+				section = [NSString stringWithUTF8String:optarg];
+				break;
+			case 'o':
+				if (options == nil)
+					options = [[NSMutableArray alloc] init];
+				[options addObject:[NSString stringWithUTF8String:optarg]];
+				break;
 			case 'h':
-				fprintf(stderr, "-k <keywords.txt> -b <bannedwords.txt>\n\n");
+				fprintf(stderr,
+					   "-k <keywords.txt>\n"
+					   "-K keyword\n"
+					   "-b <bannedwords.txt>\n"
+					   "-B badword\n"
+					   "-e <endpoints.txt>\n"
+					   "-E endpoint\n"
+					   "-s <section>\n"
+					   "-o option=value\n"
+					   "\n");
 				return 0;
 				break;
 			case '?':
@@ -54,22 +104,50 @@ int main(int argc, char * const * argv)
 				break;
 		}
 	}
+	if (customEndpoints)
+	{
+		fprintf(stderr, "Using endpoints:\n");
+		for (NSString *endpoint in endpoints)
+			fprintf(stderr, "\t%s\n", [endpoint UTF8String]);
+	}
+	else if (endpoints == nil)
+		endpoints = [GetDefaultEndpoints() mutableCopy];
+	if (customKeywords != nil)
+	{
+		fprintf(stderr, "Using custom keywords:\n");
+		for (NSString *word in customKeywords)
+			fprintf(stderr, "\t%s\n", [word UTF8String]);
+		keywords = keywords == nil ? customKeywords : [keywords arrayByAddingObjectsFromArray:customKeywords];
+	}
+	if (customBadwords != nil)
+	{
+		fprintf(stderr, "Using custom badwords:\n");
+		for (NSString *word in customBadwords)
+			fprintf(stderr, "\t%s\n", [word UTF8String]);
+		bannedwords = bannedwords == nil ? customBadwords : [bannedwords arrayByAddingObjectsFromArray:customBadwords];
+	}
 	
 	if (keywords == nil)
 	{
 		fprintf(stderr, "==WARNING: proceeding without a keyword file==\n");
 		keywords = [[NSArray alloc] init];
 	}
-	if (bannedwords == nil)
-		bannedwords = [[NSArray alloc] init];
+	hasBadWords = bannedwords != nil && [bannedwords count] > 0;
 	
 	NSMutableArray *firstPassResults = [[NSMutableArray alloc] init];
-	SearchClient *client = [[SearchClient alloc] init];
-	for (int ep = 0; ep < CL_Endpoint_Count; ++ep)
+	SearchClient *client = [[SearchClient alloc] initWithSection:section options:options];
+	fprintf(stderr, "Searching section: %s\n", [section UTF8String]);
+	if ([options count] > 0)
 	{
-		NSString *endpoint = [NSString stringWithUTF8String:CL_Endpoints[ep]];
+		fprintf(stderr, "Using options:\n");
+		for (NSString *opt in options)
+			fprintf(stderr, "\t%s\n", [opt UTF8String]);
+	}
+	int processed_endpoints = 0;
+	for (NSString *endpoint in endpoints)
+	{
 		fprintf(stderr, "\r                                                    \r");
-		fprintf(stderr, "Pass 1: %d/%u (%s)", ep+1, CL_Endpoint_Count, [endpoint UTF8String]);
+		fprintf(stderr, "Pass 1: %d/%lu (%s)", processed_endpoints+1, [endpoints count], [endpoint UTF8String]);
 		fflush(stderr);
 		NSDictionary *posts = [client ListPosts: endpoint];
 		for (id key in posts)
@@ -81,6 +159,8 @@ int main(int argc, char * const * argv)
 				for (NSString *keyword in keywords)
 					if ([lcTitle containsString:keyword] && !IdExistsInArray(firstPassResults, [info Id]))
 					{
+						if (!hasBadWords)
+							[client GetPost:info];
 						[firstPassResults addObject:info];
 						break;
 					}
@@ -88,20 +168,25 @@ int main(int argc, char * const * argv)
 			else
 			{
 				if (!IdExistsInArray(firstPassResults, [info Id]))
+				{
+					if (!hasBadWords)
+						[client GetPost:info];
 					[firstPassResults addObject:info];
+				}
 			}
 		}
+		++processed_endpoints;
 	}
 	fprintf(stderr, "\nGot %lu first pass results\n\n", [firstPassResults count]);
 	
 	NSMutableArray *secondPassResults = [[NSMutableArray alloc] init];
-	if ([bannedwords count] > 0)
+	if (hasBadWords)
 	{
 		int processed = 0;
 		for (PostInfo *info in firstPassResults)
 		{
 			fprintf(stderr, "\r                                                    \r");
-			fprintf(stderr, "Pass 2: %d/%lu", processed+1, [firstPassResults count]);
+			fprintf(stderr, "Pass 2: %d/%lu (%s)", processed+1, [firstPassResults count], [info.Id UTF8String]);
 			fflush(stderr);
 			for (NSString *bannedWord in bannedwords)
 				if ([[info.Title lowercaseString] containsString:bannedWord] || [[client GetPost:info] containsString:bannedWord])
@@ -121,9 +206,11 @@ int main(int argc, char * const * argv)
 	for (PostInfo *info in secondPassResults)
 		printf("Id:    %s\n"
 			  "Title: %s\n"
-			  "URL:   %s\n\n\n",
+			  "URL:   %s\n"
+			  "Age:   %s\n\n",
 			  [info.Id UTF8String],
 			  [info.Title UTF8String],
-			  [[info.URL absoluteString] UTF8String]);
-	return 0;
+			  [[info.URL absoluteString] UTF8String],
+			  [info.PostedAgo UTF8String]);
+	return [secondPassResults count] > 0;
 }

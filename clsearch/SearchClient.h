@@ -11,6 +11,7 @@
 
 @interface SearchClient : NSObject
 
+- (id)initWithSection:(NSString *)section options:(NSArray *)options;
 - (NSDictionary *)ListPosts: (NSString *)endpoint;
 - (NSString *)GetPost:(PostInfo *)post;
 

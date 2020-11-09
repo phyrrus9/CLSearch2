@@ -13,6 +13,7 @@
 @property NSString *Id;
 @property NSString *Title;
 @property NSURL *URL;
+@property NSString *PostedAgo;
 
 - (id)initWithId:(NSString *)identifier Title:(NSString *)title URI:(NSString *)uri;
 

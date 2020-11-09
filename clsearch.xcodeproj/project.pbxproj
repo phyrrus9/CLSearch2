@@ -10,6 +10,7 @@
 		AABD6FAF2558924000EEF9A9 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AABD6FAE2558924000EEF9A9 /* main.m */; };
 		AABD6FB8255893A600EEF9A9 /* SearchClient.m in Sources */ = {isa = PBXBuildFile; fileRef = AABD6FB7255893A600EEF9A9 /* SearchClient.m */; };
 		AABD6FBB2558A15E00EEF9A9 /* PostInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = AABD6FBA2558A15E00EEF9A9 /* PostInfo.m */; };
+		AABD6FBD25598D7800EEF9A9 /* Endpoints.m in Sources */ = {isa = PBXBuildFile; fileRef = AABD6FBC25598D7800EEF9A9 /* Endpoints.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -27,11 +28,11 @@
 /* Begin PBXFileReference section */
 		AABD6FAB2558923F00EEF9A9 /* clsearch */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = clsearch; sourceTree = BUILT_PRODUCTS_DIR; };
 		AABD6FAE2558924000EEF9A9 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		AABD6FB5255892BE00EEF9A9 /* Endpoints.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Endpoints.h; sourceTree = "<group>"; };
 		AABD6FB6255893A600EEF9A9 /* SearchClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SearchClient.h; sourceTree = "<group>"; };
 		AABD6FB7255893A600EEF9A9 /* SearchClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SearchClient.m; sourceTree = "<group>"; };
 		AABD6FB92558A15E00EEF9A9 /* PostInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PostInfo.h; sourceTree = "<group>"; };
 		AABD6FBA2558A15E00EEF9A9 /* PostInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PostInfo.m; sourceTree = "<group>"; };
+		AABD6FBC25598D7800EEF9A9 /* Endpoints.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Endpoints.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,7 +70,7 @@
 				AABD6FB7255893A600EEF9A9 /* SearchClient.m */,
 				AABD6FB92558A15E00EEF9A9 /* PostInfo.h */,
 				AABD6FBA2558A15E00EEF9A9 /* PostInfo.m */,
-				AABD6FB5255892BE00EEF9A9 /* Endpoints.h */,
+				AABD6FBC25598D7800EEF9A9 /* Endpoints.m */,
 			);
 			path = clsearch;
 			sourceTree = "<group>";
@@ -133,6 +134,7 @@
 			files = (
 				AABD6FB8255893A600EEF9A9 /* SearchClient.m in Sources */,
 				AABD6FAF2558924000EEF9A9 /* main.m in Sources */,
+				AABD6FBD25598D7800EEF9A9 /* Endpoints.m in Sources */,
 				AABD6FBB2558A15E00EEF9A9 /* PostInfo.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
