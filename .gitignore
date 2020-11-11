@@ -26,3 +26,5 @@ DerivedData/
 /*.gcno
 
 obj
+*.d
+clsearch.bin
