@@ -10,11 +10,11 @@
 
 @interface PostInfo : NSObject
 
-@property NSString *Id;
-@property NSString *Title;
-@property NSURL *URL;
-@property NSString *PostedAgo;
-@property NSString *PostText;
+@property (copy) NSString *Id;
+@property (copy) NSString *Title;
+@property (copy) NSURL *URL;
+@property (assign) NSString *PostedAgo;
+@property (assign) NSString *PostText;
 
 - (id)initWithId:(NSString *)identifier Title:(NSString *)title URI:(NSString *)uri;
 

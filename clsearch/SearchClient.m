@@ -9,6 +9,8 @@
 #import "SearchClient.h"
 #import "PostInfo.h"
 
+#define NSDataReadingUncached (1UL << 1)
+
 @interface SearchClient()
 
 @property NSDateFormatter *dateFormatter;
@@ -52,7 +54,11 @@ static NSString *PostDate = @"datetime=\"([^\"]*)\"";
 	{
 		NSURL *url = [NSURL URLWithString: [NSString stringWithFormat:@"https://%@.%@/search/%@/?s=%ld&%@",
 									 endpoint, BaseURL, self.Section, 120*i, self.Parameters]];
+#ifdef TARGET_OS_MAC
 		NSData *data = [NSData dataWithContentsOfURL:url options:NSDataReadingUncached error:&error];
+#else
+		NSData *data = [url resourceDataUsingCache: NO];
+#endif
 		NSString *ret = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 		error = nil;
 		NSRange   searchedRange = NSMakeRange(0, [ret length]);
@@ -76,7 +82,11 @@ static NSString *PostDate = @"datetime=\"([^\"]*)\"";
 	if (post.PostText != nil)
 		return [post PostText];
 	NSError *error = nil;
-	NSData *data = [NSData dataWithContentsOfURL:post.URL options:NSDataReadingUncached error:&error];
+#ifdef TARGET_OS_MAC
+		NSData *data = [NSData dataWithContentsOfURL:post.URL options:NSDataReadingUncached error:&error];
+#else
+		NSData *data = [post.URL resourceDataUsingCache: NO];
+#endif
 	if (error != nil)
 		return nil;
 	NSString *ret = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];

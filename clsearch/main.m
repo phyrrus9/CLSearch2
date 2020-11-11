@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "SearchClient.h"
+#import <unistd.h>
 
 BOOL IdExistsInArray(NSArray *arr, NSString *key)
 {
