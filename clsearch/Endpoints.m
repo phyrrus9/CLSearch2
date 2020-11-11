@@ -154,7 +154,6 @@ NSArray *GetDefaultEndpoints()
 				    @"honolulu",
 				    @"houma",
 				    @"houston",
-				    @"houston,",
 				    @"hudsonvalley",
 				    @"huntington",
 				    @"huntsville",
